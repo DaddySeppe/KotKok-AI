@@ -23,6 +23,7 @@ class FridgeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Fridge')),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fab_fridge_add',
         onPressed: () => _openEditor(context),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Toevoegen'),

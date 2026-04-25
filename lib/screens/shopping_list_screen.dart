@@ -96,6 +96,7 @@ class ShoppingListScreen extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fab_shopping_add',
         onPressed: () => _addItem(context),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Toevoegen'),
