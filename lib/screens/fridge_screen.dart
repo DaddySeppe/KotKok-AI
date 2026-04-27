@@ -5,15 +5,19 @@ import '../config/app_constants.dart';
 import '../models/ingredient.dart';
 import '../providers/fridge_provider.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/dashboard_card.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/ingredient_card.dart';
 import 'add_ingredient_screen.dart';
+import 'fridge_photo_scan_screen.dart';
 
 class FridgeScreen extends StatelessWidget {
   const FridgeScreen({super.key});
 
-  Future<void> _openEditor(BuildContext context, {Ingredient? ingredient}) async {
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => AddIngredientScreen(existingIngredient: ingredient)));
+  Future<void> _openEditor(BuildContext context,
+      {Ingredient? ingredient}) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => AddIngredientScreen(existingIngredient: ingredient)));
   }
 
   @override
@@ -21,7 +25,7 @@ class FridgeScreen extends StatelessWidget {
     final fridge = context.watch<FridgeProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Fridge')),
+      appBar: AppBar(title: const Text('Koelkast')),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'fab_fridge_add',
         onPressed: () => _openEditor(context),
@@ -33,6 +37,57 @@ class FridgeScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              DashboardCard(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const FridgePhotoScanScreen()),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.camera_alt_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Koelkast scannen',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                          Text(
+                            'Camera of upload',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Colors.black.withValues(alpha: 0.58),
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
               AppTextField(
                 label: 'Zoek ingrediënten',
                 prefixIcon: Icons.search_rounded,
@@ -48,7 +103,14 @@ class FridgeScreen extends StatelessWidget {
               const SizedBox(height: 8),
               _FilterRow(
                 label: 'Status',
-                options: const ['all', AppConstants.statusExpired, AppConstants.statusToday, AppConstants.statusSoon, AppConstants.statusOkay, AppConstants.statusLong],
+                options: const [
+                  'all',
+                  AppConstants.statusExpired,
+                  AppConstants.statusToday,
+                  AppConstants.statusSoon,
+                  AppConstants.statusOkay,
+                  AppConstants.statusLong
+                ],
                 value: fridge.statusFilter,
                 onChanged: fridge.setStatusFilter,
               ),
@@ -57,7 +119,8 @@ class FridgeScreen extends StatelessWidget {
                 child: fridge.filteredIngredients.isEmpty
                     ? EmptyState(
                         title: 'Nog geen ingrediënten',
-                        subtitle: 'Voeg je eerste producten toe en KotKok AI gaat ze slim gebruiken.',
+                        subtitle:
+                            'Voeg je eerste producten toe en KotKok AI gaat ze slim gebruiken.',
                         actionLabel: 'Ingrediënt toevoegen',
                         onAction: () => _openEditor(context),
                       )
@@ -67,22 +130,33 @@ class FridgeScreen extends StatelessWidget {
                           final ingredient = fridge.filteredIngredients[index];
                           return IngredientCard(
                             ingredient: ingredient,
-                            onEdit: () => _openEditor(context, ingredient: ingredient),
+                            onEdit: () =>
+                                _openEditor(context, ingredient: ingredient),
                             onDelete: () async {
                               final confirmed = await showDialog<bool>(
                                     context: context,
                                     builder: (_) => AlertDialog(
-                                      title: const Text('Ingrediënt verwijderen?'),
-                                      content: Text('${ingredient.name} verwijderen uit je koelkast?'),
+                                      title:
+                                          const Text('Ingrediënt verwijderen?'),
+                                      content: Text(
+                                          '${ingredient.name} verwijderen uit je koelkast?'),
                                       actions: [
-                                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuleer')),
-                                        FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Verwijder')),
+                                        TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: const Text('Annuleer')),
+                                        FilledButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            child: const Text('Verwijder')),
                                       ],
                                     ),
                                   ) ??
                                   false;
-                              if (confirmed) {
-                                await context.read<FridgeProvider>().deleteIngredient(ingredient.id);
+                              if (confirmed && context.mounted) {
+                                await context
+                                    .read<FridgeProvider>()
+                                    .deleteIngredient(ingredient.id);
                               }
                             },
                           );
@@ -98,7 +172,11 @@ class FridgeScreen extends StatelessWidget {
 }
 
 class _FilterRow extends StatelessWidget {
-  const _FilterRow({required this.label, required this.options, required this.value, required this.onChanged});
+  const _FilterRow(
+      {required this.label,
+      required this.options,
+      required this.value,
+      required this.onChanged});
 
   final String label;
   final List<String> options;

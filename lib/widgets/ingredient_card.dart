@@ -18,16 +18,25 @@ class IngredientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = app_date_utils.DateUtils.ingredientStatusColor(ingredient);
-    final statusLabel = app_date_utils.DateUtils.ingredientStatusLabel(ingredient);
+    final statusColor =
+        app_date_utils.DateUtils.ingredientStatusColor(ingredient);
+    final statusLabel =
+        app_date_utils.DateUtils.ingredientStatusLabel(ingredient);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: statusColor.withValues(alpha: 0.12)),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: statusColor.withValues(alpha: 0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,17 +46,23 @@ class IngredientCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   ingredient.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
+              ),
+              IconButton(
+                tooltip: 'Bewerken',
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined),
               ),
               PopupMenuButton<String>(
                 onSelected: (value) {
-                  if (value == 'edit') onEdit?.call();
                   if (value == 'delete') onDelete?.call();
                 },
                 itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Bewerken')),
-                  PopupMenuItem(value: 'delete', child: Text('Verwijderen')),
+                  PopupMenuItem(value: 'delete', child: Text('Verwijderen'))
                 ],
               ),
             ],
@@ -61,13 +76,25 @@ class IngredientCard extends StatelessWidget {
               TagChip(label: ingredient.category),
               TagChip(label: ingredient.storageLocation),
               TagChip(label: ingredient.isOpened ? 'Geopend' : 'Gesloten'),
-              TagChip(label: statusLabel, color: statusColor.withValues(alpha: 0.14), textColor: statusColor),
+              TagChip(
+                  label: statusLabel,
+                  color: statusColor.withValues(alpha: 0.14),
+                  textColor: statusColor),
             ],
           ),
           const SizedBox(height: 10),
-          Text('Vervalt: ${app_date_utils.DateUtils.formatDate(ingredient.expirationDate)}'),
-          const SizedBox(height: 4),
-          Text('Prijs: ${app_date_utils.DateUtils.formatMoney(ingredient.estimatedPrice)}'),
+          Row(
+            children: [
+              const Icon(Icons.event_outlined, size: 18),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                    'Vervalt: ${app_date_utils.DateUtils.formatDate(ingredient.expirationDate)}'),
+              ),
+              Text(app_date_utils.DateUtils.formatMoney(
+                  ingredient.estimatedPrice)),
+            ],
+          ),
         ],
       ),
     );

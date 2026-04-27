@@ -26,59 +26,89 @@ class ShoppingListScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AppTextField(label: 'Naam', controller: nameController, validator: (value) => Validators.requiredField(value, label: 'Naam')),
+              AppTextField(
+                  label: 'Naam',
+                  controller: nameController,
+                  validator: (value) =>
+                      Validators.requiredField(value, label: 'Naam')),
               const SizedBox(height: 12),
-              AppTextField(label: 'Geschatte prijs', controller: priceController, validator: Validators.price, keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+              AppTextField(
+                  label: 'Geschatte prijs',
+                  controller: priceController,
+                  validator: Validators.price,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true)),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Annuleer')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Voeg toe')),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Annuleer')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Voeg toe')),
         ],
       ),
     );
 
-    if (result != true) return;
+    if (result != true || !context.mounted) {
+      nameController.dispose();
+      priceController.dispose();
+      return;
+    }
     await context.read<ShoppingListProvider>().addItem(
           nameController.text.trim(),
-          estimatedPrice: double.tryParse(priceController.text.replaceAll(',', '.')) ?? 0,
+          estimatedPrice:
+              double.tryParse(priceController.text.replaceAll(',', '.')) ?? 0,
         );
+    nameController.dispose();
+    priceController.dispose();
   }
 
-  Future<void> _toggleBought(BuildContext context, String id, bool newValue, String name, double price) async {
-    await context.read<ShoppingListProvider>().toggleBought(id);
+  Future<void> _toggleBought(BuildContext context, String id, bool newValue,
+      String name, double price) async {
+    final shopping = context.read<ShoppingListProvider>();
+    final fridge = context.read<FridgeProvider>();
+
+    await shopping.toggleBought(id);
     if (!newValue) return;
+    if (!context.mounted) return;
 
     final addToFridge = await showDialog<bool>(
           context: context,
-          builder: (_) => AlertDialog(
+          builder: (dialogContext) => AlertDialog(
             title: const Text('Toevoegen aan koelkast?'),
-            content: Text('Wil je $name ook toevoegen aan je koelkastinventaris?'),
+            content:
+                Text('Wil je $name ook toevoegen aan je koelkastinventaris?'),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Nee')),
-              FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Ja')),
+              TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Nee')),
+              FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: const Text('Ja')),
             ],
           ),
         ) ??
         false;
 
-    if (!addToFridge) return;
+    if (!addToFridge || !context.mounted) return;
 
-    await context.read<FridgeProvider>().addIngredient(
-          Ingredient(
-            id: const Uuid().v4(),
-            userId: null,
-            name: name,
-            category: 'Overig',
-            quantity: '1 stuk',
-            expirationDate: DateTime.now().add(const Duration(days: 5)),
-            estimatedPrice: price,
-            isOpened: false,
-            storageLocation: 'fridge',
-            createdAt: DateTime.now(),
-          ),
-        );
+    await fridge.addIngredient(
+      Ingredient(
+        id: const Uuid().v4(),
+        userId: null,
+        name: name,
+        category: 'Overig',
+        quantity: '1 stuk',
+        expirationDate: DateTime.now().add(const Duration(days: 5)),
+        estimatedPrice: price,
+        isOpened: false,
+        storageLocation: 'fridge',
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   @override
@@ -90,7 +120,9 @@ class ShoppingListScreen extends StatelessWidget {
         title: const Text('Boodschappen'),
         actions: [
           TextButton(
-            onPressed: shopping.boughtItems.isEmpty ? null : () => shopping.clearBoughtItems(),
+            onPressed: shopping.boughtItems.isEmpty
+                ? null
+                : () => shopping.clearBoughtItems(),
             child: const Text('Wis gekocht'),
           ),
         ],
@@ -105,17 +137,22 @@ class ShoppingListScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            Text('Geschatte totale kost: ${app_date_utils.DateUtils.formatMoney(shopping.totalEstimatedCost)}'),
+            Text(
+                'Geschatte totale kost: ${app_date_utils.DateUtils.formatMoney(shopping.totalEstimatedCost)}'),
             const SizedBox(height: 14),
             if (shopping.items.isEmpty)
-              const EmptyState(title: 'Lege boodschappenlijst', subtitle: 'Voeg ontbrekende ingrediënten toe vanuit een recept of handmatig.')
+              const EmptyState(
+                  title: 'Lege boodschappenlijst',
+                  subtitle:
+                      'Voeg ontbrekende ingrediënten toe vanuit een recept of handmatig.')
             else
               ...shopping.items.map(
                 (item) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: ShoppingItemTile(
                     item: item,
-                    onChanged: (value) => _toggleBought(context, item.id, value, item.name, item.estimatedPrice),
+                    onChanged: (value) => _toggleBought(context, item.id, value,
+                        item.name, item.estimatedPrice),
                     onDelete: () => shopping.deleteItem(item.id),
                   ),
                 ),

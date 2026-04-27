@@ -6,9 +6,11 @@ import '../models/ingredient.dart';
 
 class DateUtils {
   static final _dateFormat = DateFormat('d MMM');
-  static final _moneyFormat = NumberFormat.currency(locale: 'nl_BE', symbol: '€');
+  static final _moneyFormat =
+      NumberFormat.currency(locale: 'nl_BE', symbol: 'EUR ');
 
-  static DateTime dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
+  static DateTime dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
 
   static String formatDate(DateTime? value) {
     if (value == null) return '-';
@@ -22,8 +24,10 @@ class DateUtils {
     return dateOnly(value).difference(dateOnly(DateTime.now())).inDays;
   }
 
-  static bool isExpired(Ingredient ingredient) => daysUntil(ingredient.expirationDate) < 0;
-  static bool isToday(Ingredient ingredient) => daysUntil(ingredient.expirationDate) == 0;
+  static bool isExpired(Ingredient ingredient) =>
+      daysUntil(ingredient.expirationDate) < 0;
+  static bool isToday(Ingredient ingredient) =>
+      daysUntil(ingredient.expirationDate) == 0;
   static bool isSoon(Ingredient ingredient) {
     final days = daysUntil(ingredient.expirationDate);
     return days > 0 && days <= 3;
@@ -43,7 +47,9 @@ class DateUtils {
   }
 
   static Color ingredientStatusColor(Ingredient ingredient) {
-    if (isExpired(ingredient) || isToday(ingredient)) return AppConstants.dangerColor;
+    if (isExpired(ingredient) || isToday(ingredient)) {
+      return AppConstants.dangerColor;
+    }
     if (isSoon(ingredient)) return AppConstants.warningColor;
     if (isLongShelfLife(ingredient)) return Colors.blueGrey;
     return AppConstants.successColor;

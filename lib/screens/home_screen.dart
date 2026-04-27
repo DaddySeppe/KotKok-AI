@@ -13,9 +13,10 @@ import '../widgets/recipe_card.dart';
 import '../widgets/tag_chip.dart';
 import '../widgets/waste_score_circle.dart';
 import 'ai_recipe_screen.dart';
+import 'fridge_photo_scan_screen.dart';
 import 'panic_cooking_screen.dart';
-import 'shopping_list_screen.dart';
 import 'recipe_detail_screen.dart';
+import 'shopping_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -28,81 +29,218 @@ class HomeScreen extends StatelessWidget {
     final preferences = context.watch<PreferencesProvider>();
 
     final recommendationService = RecipeRecommendationService();
-    final recommendationList = recommendationService.buildRecommendations(fridge.ingredients, recipes.savedRecipes);
-    final topRecipe = recommendationList.isNotEmpty ? recommendationList.first : null;
+    final recommendationList = recommendationService.buildRecommendations(
+      fridge.ingredients,
+      recipes.savedRecipes,
+    );
+    final topRecipe =
+        recommendationList.isNotEmpty ? recommendationList.first : null;
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Hey, wat gaan we redden vandaag?', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 6),
-            Text('Je budget per maaltijd: ${app_date_utils.DateUtils.formatMoney(preferences.preferences.maxBudgetPerMeal)}'),
-            const SizedBox(height: 18),
-            Center(child: WasteScoreCircle(score: fridge.wasteRiskScore, label: 'Fridge Risk')),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(child: _MetricCard(label: 'Vandaag', value: fridge.expiringToday.length.toString(), color: AppConstants.dangerColor)),
-                const SizedBox(width: 12),
-                Expanded(child: _MetricCard(label: 'Binnen 3 dagen', value: fridge.expiringSoon.length.toString(), color: AppConstants.warningColor)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _MetricCard(label: 'Bespaard', value: app_date_utils.DateUtils.formatMoney(stats.moneySaved), color: AppConstants.successColor)),
-                const SizedBox(width: 12),
-                Expanded(child: _MetricCard(label: 'Producten', value: stats.productsSaved.toString(), color: Colors.blueGrey)),
-              ],
-            ),
-            const SizedBox(height: 18),
-            if (fridge.expiringToday.isNotEmpty) ...[
-              Text('Ingrediënten voor vandaag', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: fridge.expiringToday.take(4).map((item) => TagChip(label: item.name, color: AppConstants.dangerColor.withValues(alpha: 0.12), textColor: AppConstants.dangerColor)).toList(),
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'KotKok AI',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Vandaag redden we eerst wat snel op moet.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.black.withValues(alpha: 0.64),
+                        ),
+                  ),
+                  const SizedBox(height: 18),
+                  _PriorityPanel(
+                    riskScore: fridge.wasteRiskScore,
+                    todayCount: fridge.expiringToday.length,
+                    soonCount: fridge.expiringSoon.length,
+                    budget: app_date_utils.DateUtils.formatMoney(
+                      preferences.preferences.maxBudgetPerMeal,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 18),
-            ],
-            if (topRecipe != null) ...[
-              Text('Top aanbevolen recept', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-              const SizedBox(height: 8),
-              RecipeCard(
-                recipe: topRecipe,
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RecipeDetailScreen(recipe: topRecipe))),
-              ),
-              const SizedBox(height: 18),
-            ],
-            Text('Snelle acties', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 10),
-            GridView.count(
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: SliverGrid.count(
               crossAxisCount: 2,
-              crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.35,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.45,
               children: [
-                _QuickActionCard(label: 'Gebruik wat vandaag vervalt', icon: Icons.timer_rounded, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PanicCookingScreen()))),
-                _QuickActionCard(label: 'Geen zin om te koken', icon: Icons.fastfood_rounded, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PanicCookingScreen()))),
-                _QuickActionCard(label: 'AI recept maken', icon: Icons.auto_awesome_rounded, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiRecipeScreen()))),
-                _QuickActionCard(label: 'Boodschappenlijst', icon: Icons.shopping_bag_rounded, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ShoppingListScreen()))),
+                _MetricCard(
+                  label: 'Bespaard',
+                  value: app_date_utils.DateUtils.formatMoney(stats.moneySaved),
+                  icon: Icons.savings_outlined,
+                  color: AppConstants.successColor,
+                ),
+                _MetricCard(
+                  label: 'Producten',
+                  value: stats.productsSaved.toString(),
+                  icon: Icons.inventory_2_outlined,
+                  color: Colors.blueGrey,
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+          if (fridge.expiringToday.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: _Section(
+                  title: 'Vandaag gebruiken',
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: fridge.expiringToday
+                        .take(6)
+                        .map(
+                          (item) => TagChip(
+                            label: item.name,
+                            color: AppConstants.dangerColor
+                                .withValues(alpha: 0.12),
+                            textColor: AppConstants.dangerColor,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ),
+            ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            sliver: SliverToBoxAdapter(
+              child: _Section(
+                title: 'Snelle acties',
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: 1.24,
+                  children: [
+                    _QuickActionCard(
+                      label: 'Koelkast scannen',
+                      icon: Icons.camera_alt_outlined,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const FridgePhotoScanScreen()),
+                      ),
+                    ),
+                    _QuickActionCard(
+                      label: 'Vandaag koken',
+                      icon: Icons.timer_outlined,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const PanicCookingScreen()),
+                      ),
+                    ),
+                    _QuickActionCard(
+                      label: 'AI recept',
+                      icon: Icons.auto_awesome_outlined,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const AiRecipeScreen()),
+                      ),
+                    ),
+                    _QuickActionCard(
+                      label: 'Boodschappen',
+                      icon: Icons.shopping_bag_outlined,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const ShoppingListScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (topRecipe != null)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              sliver: SliverToBoxAdapter(
+                child: _Section(
+                  title: 'Aanbevolen recept',
+                  child: RecipeCard(
+                    recipe: topRecipe,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              RecipeDetailScreen(recipe: topRecipe)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.label, required this.value, required this.color});
+class _PriorityPanel extends StatelessWidget {
+  const _PriorityPanel({
+    required this.riskScore,
+    required this.todayCount,
+    required this.soonCount,
+    required this.budget,
+  });
+
+  final int riskScore;
+  final int todayCount;
+  final int soonCount;
+  final String budget;
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardCard(
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        children: [
+          WasteScoreCircle(score: riskScore, label: 'Risico'),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              children: [
+                _PriorityRow(
+                    label: 'Vandaag',
+                    value: todayCount.toString(),
+                    color: AppConstants.dangerColor),
+                const Divider(height: 22),
+                _PriorityRow(
+                    label: 'Binnen 3 dagen',
+                    value: soonCount.toString(),
+                    color: AppConstants.warningColor),
+                const Divider(height: 22),
+                _PriorityRow(
+                    label: 'Budget/maaltijd',
+                    value: budget,
+                    color: AppConstants.successColor),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PriorityRow extends StatelessWidget {
+  const _PriorityRow(
+      {required this.label, required this.value, required this.color});
 
   final String label;
   final String value;
@@ -110,13 +248,90 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.black.withValues(alpha: 0.66),
+                ),
+          ),
+        ),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 10),
+        child,
+      ],
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
     return DashboardCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 8),
-          Text(value, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: color)),
+          Icon(icon, color: color),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: color,
+                    ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -124,7 +339,8 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({required this.label, required this.icon, required this.onTap});
+  const _QuickActionCard(
+      {required this.label, required this.icon, required this.onTap});
 
   final String label;
   final IconData icon;
@@ -136,13 +352,12 @@ class _QuickActionCard extends StatelessWidget {
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Icon(icon, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 10),
           Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            style: const TextStyle(fontWeight: FontWeight.w800),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),

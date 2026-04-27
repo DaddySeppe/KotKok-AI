@@ -22,6 +22,7 @@ dependencies:
   flutter_local_notifications: ^17.2.2
   http: ^1.2.2
   collection: ^1.19.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
